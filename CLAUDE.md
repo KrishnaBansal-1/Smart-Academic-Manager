@@ -321,9 +321,9 @@ The generation engine employs a **Heuristic Constraint Satisfaction Problem (CSP
 - Real-time aggregate view:
   $$\text{Percentage} = \frac{\text{Classes Present} + \text{Classes Late}}{\text{Total Conducted Classes}} \times 100$$
 - Visual indicators:
-  - $\ge 75\%$: **Good Standing** (Green)
-  - $65\% - 74.9\%$: **Warning Zone** (Yellow)
-  - $< 65\%$: **Critical Defaulter Alert** (Red)
+  - $\ge 80\%$: **Good Standing** (Green)
+  - $70\% - 79.99\%$: **Warning Zone** (Yellow)
+  - $< 70\%$: **Critical Defaulter Alert** (Red)
 - Detailed drill-down: Date-wise, subject-wise attendance logs with timestamps and status.
 
 ---
