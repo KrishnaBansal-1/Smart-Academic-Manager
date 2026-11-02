@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "ts-node-dev --transpile-only src/utils/seeder.ts",
+    "seed:demo": "ts-node-dev --transpile-only src/utils/seeder.ts",
     "test": "jest"
   },
   "dependencies": {

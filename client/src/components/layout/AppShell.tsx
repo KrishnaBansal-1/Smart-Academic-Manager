@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Database,
   GraduationCap,
+  Sliders,
 } from 'lucide-react';
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -49,10 +50,12 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         return [
           { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
           { to: '/admin/manage', label: 'Academic Records', icon: Database },
+          { to: '/admin/academics', label: 'Academic Setup', icon: Calendar },
         ];
       case 'PROFESSOR':
         return [
           { to: '/professor', label: 'Faculty Portal', icon: LayoutDashboard },
+          { to: '/professor/preferences', label: 'Teaching Preferences', icon: Sliders },
         ];
       case 'STUDENT':
         return [

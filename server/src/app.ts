@@ -8,6 +8,10 @@ import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './routes/auth.routes';
 import adminRoutes from './routes/admin.routes';
 import professorRoutes from './routes/professor.routes';
+import settingsRoutes from './routes/settings.routes';
+import termRoutes from './routes/term.routes';
+import offeringRoutes from './routes/offering.routes';
+import constraintRoutes from './routes/constraint.routes';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -57,6 +61,10 @@ export const createApp = (): Application => {
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/admin', adminRoutes);
   app.use('/api/v1/professor', professorRoutes);
+  app.use('/api/v1/settings', settingsRoutes);
+  app.use('/api/v1/terms', termRoutes);
+  app.use('/api/v1/offerings', offeringRoutes);
+  app.use('/api/v1/constraints', constraintRoutes);
 
   // Fallback 404 handler
   app.use((_req: Request, res: Response) => {

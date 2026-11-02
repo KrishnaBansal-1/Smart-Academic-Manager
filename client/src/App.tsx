@@ -13,8 +13,14 @@ const AdminDashboard = lazy(() =>
 const AdminManagement = lazy(() =>
   import('./pages/admin/AdminManagement').then((m) => ({ default: m.AdminManagement }))
 );
+const AcademicSetup = lazy(() =>
+  import('./pages/admin/AcademicSetup').then((m) => ({ default: m.AcademicSetup }))
+);
 const ProfessorDashboard = lazy(() =>
   import('./pages/professor/ProfessorDashboard').then((m) => ({ default: m.ProfessorDashboard }))
+);
+const ProfessorPreferences = lazy(() =>
+  import('./pages/professor/ProfessorPreferences').then((m) => ({ default: m.ProfessorPreferences }))
 );
 const StudentDashboard = lazy(() =>
   import('./pages/student/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
@@ -70,11 +76,13 @@ export const App: React.FC = () => {
                   <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/manage" element={<AdminManagement />} />
+                    <Route path="/admin/academics" element={<AcademicSetup />} />
                   </Route>
 
                   {/* Role Protected: PROFESSOR */}
                   <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
                     <Route path="/professor" element={<ProfessorDashboard />} />
+                    <Route path="/professor/preferences" element={<ProfessorPreferences />} />
                   </Route>
 
                   {/* Role Protected: STUDENT */}

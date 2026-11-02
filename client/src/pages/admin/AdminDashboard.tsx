@@ -144,12 +144,32 @@ export const AdminDashboard: React.FC = () => {
         </div>
       </div>
 
-      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6">
-        <div className="flex items-start gap-4">
-          <div className="rounded-xl bg-indigo-50 p-3 text-indigo-700"><Settings2 className="h-6 w-6" /></div>
-          <div><h3 className="text-lg font-bold text-slate-900">Academic records</h3><p className="mt-1 max-w-2xl text-sm text-slate-600">Add and update students, professors, course assignments, semester cohorts, and rooms.</p></div>
+      <section className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-sky-50 p-3 text-sky-700"><Calendar className="h-6 w-6" /></div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Academic Setup</h3>
+              <p className="mt-1 text-sm text-slate-600">Configure academic terms, period grids, institutional holidays, and section-wise course offerings.</p>
+            </div>
+          </div>
+          <Link to="/admin/academics" className="mt-4 inline-flex self-start items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-700">
+            Configure Academic Setup <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
-        <Link to="/admin/manage" className="mt-4 inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 sm:mt-0">Manage records <ArrowRight className="h-4 w-4" /></Link>
+
+        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
+          <div className="flex items-start gap-4">
+            <div className="rounded-xl bg-indigo-50 p-3 text-indigo-700"><Settings2 className="h-6 w-6" /></div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Academic Records</h3>
+              <p className="mt-1 text-sm text-slate-600">Add and update students, professors, course assignments, semester cohorts, and rooms.</p>
+            </div>
+          </div>
+          <Link to="/admin/manage" className="mt-4 inline-flex self-start items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700">
+            Manage Records <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </section>
     </div>
   );
