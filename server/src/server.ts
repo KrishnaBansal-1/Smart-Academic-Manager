@@ -4,10 +4,23 @@ import { createApp } from './app';
 import { connectDB } from './config/db';
 import { ENV } from './config/env';
 import { GenerationJob } from './models/GenerationJob';
+import { ScheduleSlot } from './models/ScheduleSlot';
 
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Clean up any legacy MongoDB indexes from previous iterations
+    const legacyIndexes = [
+      'timetableId_1_dayOfWeek_1_slotIndex_1_professorId_1',
+      'timetableId_1_dayOfWeek_1_slotIndex_1_batchId_1',
+      'timetableId_1_dayOfWeek_1_slotIndex_1_classroomId_1',
+      'professorId_1',
+    ];
+    for (const idx of legacyIndexes) {
+      await ScheduleSlot.collection.dropIndex(idx).catch(() => {});
+    }
+    await ScheduleSlot.syncIndexes().catch(() => {});
 
     // Mark any interrupted running jobs as FAILED on startup
     await GenerationJob.updateMany(

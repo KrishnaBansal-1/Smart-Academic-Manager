@@ -48,13 +48,32 @@ export async function loadSolverInput(
   // Fetch unique batches & courses for these offerings
   const batchIds = Array.from(new Set(offeringsDocs.map((o) => o.batchId.toString())));
   const courseIds = Array.from(new Set(offeringsDocs.map((o) => o.courseId.toString())));
+  const allProfIds = Array.from(
+    new Set(offeringsDocs.flatMap((o) => o.professorIds.map((p) => p.toString())))
+  );
 
-  const [batchesDocs, coursesDocs] = await Promise.all([
+  const [batchesDocs, coursesDocs, profUsersDocs] = await Promise.all([
     Batch.find({ _id: { $in: batchIds } }),
     Course.find({ _id: { $in: courseIds } }),
+    User.find({ _id: { $in: allProfIds } }).select('firstName lastName email'),
   ]);
 
   const courseMap = new Map(coursesDocs.map((c) => [c._id.toString(), c]));
+
+  const courses = coursesDocs.map((c) => ({
+    id: c._id.toString(),
+    code: c.code,
+    name: c.title,
+  }));
+
+  const professors = profUsersDocs.map((p) => {
+    const fullName = `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email || 'Faculty';
+    return {
+      id: p._id.toString(),
+      name: fullName,
+      email: p.email,
+    };
+  });
 
   // Compute student count per batch
   const batches = await Promise.all(
@@ -137,6 +156,8 @@ export async function loadSolverInput(
     batches,
     offerings,
     constraints,
+    courses,
+    professors,
     pinnedSlots,
     config,
   };

@@ -21,10 +21,25 @@ export const SHORT_DAY_NAMES: Record<number, string> = {
   7: 'Sun',
 };
 
+export type CellRenderResult =
+  | React.ReactNode
+  | { content: React.ReactNode; colSpan?: number };
+
+function isColSpanResult(
+  result: CellRenderResult
+): result is { content: React.ReactNode; colSpan?: number } {
+  return (
+    result !== null &&
+    typeof result === 'object' &&
+    !React.isValidElement(result) &&
+    'content' in (result as object)
+  );
+}
+
 export interface TimetableGridShellProps {
   workingDays: number[];
   periods: IPeriodGridItem[];
-  renderCell: (dayOfWeek: number, period: IPeriodGridItem) => React.ReactNode;
+  renderCell: (dayOfWeek: number, period: IPeriodGridItem) => CellRenderResult;
   renderDayHeader?: (dayOfWeek: number) => React.ReactNode;
   renderPeriodHeader?: (period: IPeriodGridItem) => React.ReactNode;
   className?: string;
@@ -78,30 +93,46 @@ export const TimetableGridShell: React.FC<TimetableGridShellProps> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {sortedDays.map((dayOfWeek) => (
-            <tr key={dayOfWeek} className="hover:bg-slate-50/50 transition-colors">
-              <td className="w-28 p-3.5 font-semibold text-slate-800 border-r border-slate-200 bg-slate-50/30">
-                {renderDayHeader ? (
-                  renderDayHeader(dayOfWeek)
-                ) : (
-                  <div>
-                    <div className="text-sm">{DAY_NAMES[dayOfWeek] || `Day ${dayOfWeek}`}</div>
-                    <div className="text-xs text-slate-400 font-normal">{SHORT_DAY_NAMES[dayOfWeek]}</div>
-                  </div>
-                )}
-              </td>
-              {sortedPeriods.map((period) => (
+          {sortedDays.map((dayOfWeek) => {
+            const cells: React.ReactNode[] = [];
+            let i = 0;
+            while (i < sortedPeriods.length) {
+              const period = sortedPeriods[i];
+              const result = renderCell(dayOfWeek, period);
+              const content: React.ReactNode = isColSpanResult(result) ? result.content : result;
+              const colSpan = isColSpanResult(result) ? result.colSpan || 1 : 1;
+
+              cells.push(
                 <td
                   key={`${dayOfWeek}-${period.index}`}
+                  colSpan={colSpan}
                   className={`p-1.5 border-r border-slate-100 last:border-r-0 align-top ${
                     period.blocked ? 'bg-amber-50/30' : ''
                   }`}
                 >
-                  {renderCell(dayOfWeek, period)}
+                  {content}
                 </td>
-              ))}
-            </tr>
-          ))}
+              );
+
+              i += Math.max(1, colSpan);
+            }
+
+            return (
+              <tr key={dayOfWeek} className="hover:bg-slate-50/50 transition-colors">
+                <td className="w-28 p-3.5 font-semibold text-slate-800 border-r border-slate-200 bg-slate-50/30">
+                  {renderDayHeader ? (
+                    renderDayHeader(dayOfWeek)
+                  ) : (
+                    <div>
+                      <div className="text-sm">{DAY_NAMES[dayOfWeek] || `Day ${dayOfWeek}`}</div>
+                      <div className="text-xs text-slate-400 font-normal">{SHORT_DAY_NAMES[dayOfWeek]}</div>
+                    </div>
+                  )}
+                </td>
+                {cells}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

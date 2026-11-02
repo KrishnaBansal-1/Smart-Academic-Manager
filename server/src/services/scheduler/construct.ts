@@ -53,7 +53,15 @@ export function constructInitialSchedule(
   const rng = createRng(seed);
 
   const { workingDays, periods, rooms, batches, offerings, constraints, pinnedSlots = [] } = input;
-  const context = { workingDays, periods, rooms, batches };
+  const context = {
+    workingDays,
+    periods,
+    rooms,
+    batches,
+    constraints,
+    professors: input.professors,
+    courses: input.courses,
+  };
   const periodMap = new Map<number, SolverPeriod>(periods.map((p) => [p.index, p]));
 
   // Build variables
@@ -216,7 +224,11 @@ export function constructInitialSchedule(
                 s.dayOfWeek === coord.dayOfWeek &&
                 s.courseId === v.offering.courseId
             );
-            if (sameDayClass) hCost += 80;
+            if (sameDayClass) {
+              const theoryHours = v.offering.theoryHoursPerWeek || 3;
+              // Strongly avoid scheduling the same theory course twice on the same day by default
+              hCost += theoryHours <= workingDays.length ? 50000 : 5000;
+            }
           }
 
           hCost += rng() * 5;

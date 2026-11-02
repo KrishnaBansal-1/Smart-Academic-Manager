@@ -78,6 +78,7 @@ const UserSchema = new Schema<IUser>(
   {
     timestamps: true,
     toJSON: {
+      virtuals: true,
       transform(_doc, ret) {
         const safeRecord = ret as Record<string, unknown>;
         delete safeRecord.passwordHash;
@@ -85,8 +86,16 @@ const UserSchema = new Schema<IUser>(
         return safeRecord;
       },
     },
+    toObject: {
+      virtuals: true,
+    },
   }
 );
+
+// Virtual for full name
+UserSchema.virtual('name').get(function (this: IUser) {
+  return `${this.firstName || ''} ${this.lastName || ''}`.trim();
+});
 
 // Partial unique index on rollNumber (sparse/partial filter so null/undefined roll numbers for profs/admins don't conflict)
 UserSchema.index(

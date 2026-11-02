@@ -16,6 +16,9 @@ const AdminManagement = lazy(() =>
 const AcademicSetup = lazy(() =>
   import('./pages/admin/AcademicSetup').then((m) => ({ default: m.AcademicSetup }))
 );
+const TimetableManager = lazy(() =>
+  import('./pages/admin/TimetableManager').then((m) => ({ default: m.TimetableManager }))
+);
 const ProfessorDashboard = lazy(() =>
   import('./pages/professor/ProfessorDashboard').then((m) => ({ default: m.ProfessorDashboard }))
 );
@@ -77,6 +80,7 @@ export const App: React.FC = () => {
                     <Route path="/admin" element={<AdminDashboard />} />
                     <Route path="/admin/manage" element={<AdminManagement />} />
                     <Route path="/admin/academics" element={<AcademicSetup />} />
+                    <Route path="/admin/timetable" element={<TimetableManager />} />
                   </Route>
 
                   {/* Role Protected: PROFESSOR */}

@@ -35,6 +35,38 @@ export function evaluateSoftCost(slots: SolverSlot[], input: SolverInput): CostE
 
   const placedSlots = slots.filter((s) => s.placed);
 
+  const DAY_NAMES: Record<number, string> = {
+    1: 'Monday',
+    2: 'Tuesday',
+    3: 'Wednesday',
+    4: 'Thursday',
+    5: 'Friday',
+    6: 'Saturday',
+    7: 'Sunday',
+  };
+
+  const getCourseLabel = (courseId: string): string => {
+    const course = input.courses?.find((c) => c.id === courseId);
+    if (course) return `${course.code} (${course.name})`;
+    const off = input.offerings?.find((o) => o.courseId === courseId);
+    if (off && (off.courseCode || off.courseName)) {
+      return off.courseName ? `${off.courseCode} (${off.courseName})` : off.courseCode;
+    }
+    return `Course (${courseId.slice(-4)})`;
+  };
+
+  const getProfLabel = (profId: string): string => {
+    const prof = input.professors?.find((p) => p.id === profId);
+    if (prof) return prof.name;
+    return `Faculty (${profId.slice(-4)})`;
+  };
+
+  const getBatchLabel = (batchId: string): string => {
+    const batch = input.batches?.find((b) => b.id === batchId);
+    if (batch) return batch.name;
+    return `Section (${batchId.slice(-4)})`;
+  };
+
   // 1. Professor Unavailable Windows & Outside Preferred Windows
   for (const slot of placedSlots) {
     const day = slot.dayOfWeek;
@@ -57,8 +89,9 @@ export function evaluateSoftCost(slots: SolverSlot[], input: SolverInput): CostE
         if (hitUnavailable > 0) {
           const penalty = hitUnavailable * 500 * weight;
           unavailableCost += penalty;
+          const dayName = DAY_NAMES[day] || `Day ${day}`;
           warnings.push(
-            `Professor ${profId} scheduled in unavailable window on day ${day}, period(s) [${startP}..${endP}].`
+            `${getProfLabel(profId)} scheduled in unavailable window on ${dayName}, period(s) [${startP}..${endP}].`
           );
         }
       }
@@ -99,8 +132,9 @@ export function evaluateSoftCost(slots: SolverSlot[], input: SolverInput): CostE
     if (hours > maxDaily) {
       const excess = hours - maxDaily;
       overDailyHoursCost += excess * 100 * weight;
+      const dayName = DAY_NAMES[day] || `Day ${day}`;
       warnings.push(
-        `Professor ${profId} assigned ${hours} hours on day ${day}, exceeding daily limit of ${maxDaily} hours.`
+        `${getProfLabel(profId)} assigned ${hours} hours on ${dayName}, exceeding daily limit of ${maxDaily} hours.`
       );
     }
   }
@@ -168,9 +202,13 @@ export function evaluateSoftCost(slots: SolverSlot[], input: SolverInput): CostE
   for (const [key, count] of batchDayCourseCount.entries()) {
     if (count > 1) {
       const excess = count - 1;
-      sameDayRepeatCost += excess * 40; // Medium penalty
-      const [, dayStr, courseId] = key.split(':');
-      warnings.push(`Course ${courseId} scheduled ${count} times on day ${dayStr}.`);
+      sameDayRepeatCost += excess * 2500; // Strong penalty: prevent duplicate theory classes on same day
+      const [batchId, dayStr, courseId] = key.split(':');
+      const dayNum = Number(dayStr);
+      const dayName = DAY_NAMES[dayNum] || `Day ${dayNum}`;
+      warnings.push(
+        `${getCourseLabel(courseId)} scheduled ${count} times on ${dayName} for ${getBatchLabel(batchId)}.`
+      );
     }
   }
 

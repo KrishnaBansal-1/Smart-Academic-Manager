@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Calendar, Users, Building, BookOpen, Play, CheckSquare, Settings2, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../api/client';
@@ -8,6 +8,7 @@ type AdminStats = { professors: number | null; rooms: number | null; courses: nu
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<AdminStats>({ professors: null, rooms: null, courses: null, term: '—' });
   const [statsLoading, setStatsLoading] = useState(true);
 
@@ -109,11 +110,17 @@ export const AdminDashboard: React.FC = () => {
             Run the heuristic algorithm to compute collision-free timetables respecting room capacities, teacher unavailability, and soft preferences. Fine-tune manually via drag-and-drop.
           </p>
           <div className="flex space-x-3">
-            <button className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+            <button
+              onClick={() => navigate('/admin/timetable')}
+              className="flex items-center space-x-2 bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors shadow-sm cursor-pointer"
+            >
               <Play className="w-4 h-4" />
               <span>Generate Timetable</span>
             </button>
-            <button className="flex items-center space-x-2 border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button
+              onClick={() => navigate('/admin/timetable')}
+              className="flex items-center space-x-2 border border-slate-300 hover:bg-slate-50 text-slate-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer"
+            >
               <span>Open Visual Editor</span>
             </button>
           </div>

@@ -68,6 +68,18 @@ export interface SolverSlot {
   occupancyKeys?: string[];
 }
 
+export interface SolverProfessor {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export interface SolverCourse {
+  id: string;
+  code: string;
+  name: string;
+}
+
 export interface SolverConfig {
   maxSeconds?: number;
   seed?: number;
@@ -82,6 +94,8 @@ export interface SolverInput {
   batches: SolverBatch[];
   offerings: SolverOffering[];
   constraints: SolverProfessorConstraint[];
+  courses?: SolverCourse[];
+  professors?: SolverProfessor[];
   pinnedSlots?: SolverSlot[];
   config?: SolverConfig;
 }

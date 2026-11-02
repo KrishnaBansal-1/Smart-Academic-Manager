@@ -75,7 +75,16 @@ ScheduleSlotSchema.pre('validate', function (next) {
   }
 
   if (this.placed) {
-    if (!this.occupancyKeys || this.occupancyKeys.length === 0) {
+    if (
+      !this.occupancyKeys ||
+      this.occupancyKeys.length === 0 ||
+      this.isModified('dayOfWeek') ||
+      this.isModified('slotIndex') ||
+      this.isModified('durationSlots') ||
+      this.isModified('classroomId') ||
+      this.isModified('professorIds') ||
+      this.isModified('batchId')
+    ) {
       this.occupancyKeys = buildOccupancyKeys({
         professorIds: this.professorIds,
         batchId: this.batchId,

@@ -22,8 +22,8 @@ export function annealSchedule(
   const seed = (input.config?.seed ?? 42) + 101;
   const rng = createRng(seed);
 
-  const { workingDays, periods, rooms, batches } = input;
-  const context = { workingDays, periods, rooms, batches };
+  const { workingDays, periods, rooms, batches, constraints, professors, courses } = input;
+  const context = { workingDays, periods, rooms, batches, constraints, professors, courses };
 
   // Clone slots so we don't mutate input
   const currentSlots: SolverSlot[] = slots.map((s) => ({ ...s }));

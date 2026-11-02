@@ -393,15 +393,18 @@ describe('Phase 2: Timetable Scheduler & Solver Engine', () => {
 
         expect(pollRes.status).toBe(200);
         finalJob = pollRes.body.data.job;
-        jobStatus = finalJob.status;
+        jobStatus = finalJob?.status || '';
       }
 
       expect(jobStatus).toBe('DONE');
-      expect(finalJob.progress).toBe(100);
-      expect(finalJob.timetableId).toBeDefined();
+      expect(finalJob!.progress).toBe(100);
+      expect(finalJob!.timetableId).toBeDefined();
 
       // Check generated Timetable draft
-      const timetable = await Timetable.findById(finalJob.timetableId._id || finalJob.timetableId);
+      const targetTimetableId = typeof finalJob!.timetableId === 'object' && finalJob!.timetableId !== null
+        ? (finalJob!.timetableId as { _id?: string })._id
+        : finalJob!.timetableId;
+      const timetable = await Timetable.findById(targetTimetableId);
       expect(timetable).toBeDefined();
       expect(timetable!.status).toBe('DRAFT');
       expect(timetable!.revision).toBe(1);
@@ -493,13 +496,16 @@ describe('Phase 2: Timetable Scheduler & Solver Engine', () => {
           .get(`/api/v1/generation-jobs/${jobId}`)
           .set('Authorization', `Bearer ${adminToken}`);
         finalJob = pollRes.body.data.job;
-        jobStatus = finalJob.status;
+        jobStatus = finalJob?.status || '';
       }
 
       expect(jobStatus).toBe('DONE');
 
       // Verify that the new timetable contains the pinned slot at the exact same location
-      const newSlots = await ScheduleSlot.find({ timetableId: finalJob.timetableId._id || finalJob.timetableId });
+      const pinnedTimetableId = typeof finalJob!.timetableId === 'object' && finalJob!.timetableId !== null
+        ? (finalJob!.timetableId as { _id?: string })._id
+        : finalJob!.timetableId;
+      const newSlots = await ScheduleSlot.find({ timetableId: pinnedTimetableId });
       const matchedSlot = newSlots.find((s) => s.lineageId === slotToPin.lineageId);
       expect(matchedSlot).toBeDefined();
       expect(matchedSlot!.pinned).toBe(true);
