@@ -8,6 +8,7 @@ import { Login } from './pages/auth/Login';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { ProfessorDashboard } from './pages/professor/ProfessorDashboard';
 import { StudentDashboard } from './pages/student/StudentDashboard';
+import { AdminManagement } from './pages/admin/AdminManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ export const App: React.FC = () => {
                 {/* Role Protected: ADMIN */}
                 <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                   <Route path="/admin" element={<AdminDashboard />} />
+                  <Route path="/admin/manage" element={<AdminManagement />} />
                 </Route>
 
                 {/* Role Protected: PROFESSOR */}

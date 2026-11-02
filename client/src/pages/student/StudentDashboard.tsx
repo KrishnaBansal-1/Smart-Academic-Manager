@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar, CheckCircle2, AlertTriangle, XCircle, BookOpen, Clock } from 'lucide-react';
+import { Calendar, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();

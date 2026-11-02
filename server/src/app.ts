@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import { ENV } from './config/env';
 import { errorHandler } from './middlewares/error.middleware';
 import authRoutes from './routes/auth.routes';
+import adminRoutes from './routes/admin.routes';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -36,6 +37,7 @@ export const createApp = (): Application => {
 
   // API Routes
   app.use('/api/v1/auth', authRoutes);
+  app.use('/api/v1/admin', adminRoutes);
 
   // Fallback 404 handler
   app.use((_req: Request, res: Response) => {

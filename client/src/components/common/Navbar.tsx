@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, Calendar, CheckSquare, Shield, User as UserIcon } from 'lucide-react';
+import { LogOut, Calendar, User as UserIcon } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -33,6 +34,7 @@ export const Navbar: React.FC = () => {
 
         {user && (
           <div className="flex items-center space-x-4">
+            {user.role === 'ADMIN' && <Link to="/admin/manage" className="hidden rounded-md px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-50 hover:text-sky-700 sm:inline-flex">Manage records</Link>}
             <div className="flex items-center space-x-2 text-right">
               <div>
                 <p className="text-sm font-medium text-slate-800 leading-tight">

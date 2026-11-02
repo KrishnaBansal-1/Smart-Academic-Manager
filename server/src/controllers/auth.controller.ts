@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { SignOptions } from 'jsonwebtoken';
 import { User, IUser, UserRole } from '../models/User';
 import { ENV } from '../config/env';
 import { ApiError, sendSuccess } from '../utils/response';
@@ -15,11 +16,11 @@ export const generateTokens = (user: IUser) => {
   };
 
   const accessToken = jwt.sign(payload, ENV.JWT_SECRET, {
-    expiresIn: ENV.JWT_EXPIRES_IN,
+    expiresIn: ENV.JWT_EXPIRES_IN as SignOptions['expiresIn'],
   });
 
   const refreshToken = jwt.sign(payload, ENV.REFRESH_TOKEN_SECRET, {
-    expiresIn: ENV.REFRESH_TOKEN_EXPIRES_IN,
+    expiresIn: ENV.REFRESH_TOKEN_EXPIRES_IN as SignOptions['expiresIn'],
   });
 
   return { accessToken, refreshToken };

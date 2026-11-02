@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar, Users, Building, BookOpen, Play, CheckSquare } from 'lucide-react';
+import { Calendar, Users, Building, BookOpen, Play, CheckSquare, Settings2, ArrowRight } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -109,6 +110,14 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <section className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:flex sm:items-center sm:justify-between sm:gap-6">
+        <div className="flex items-start gap-4">
+          <div className="rounded-xl bg-indigo-50 p-3 text-indigo-700"><Settings2 className="h-6 w-6" /></div>
+          <div><h3 className="text-lg font-bold text-slate-900">Academic records</h3><p className="mt-1 max-w-2xl text-sm text-slate-600">Add and update students, professors, course assignments, semester cohorts, and rooms.</p></div>
+        </div>
+        <Link to="/admin/manage" className="mt-4 inline-flex shrink-0 items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-700 sm:mt-0">Manage records <ArrowRight className="h-4 w-4" /></Link>
+      </section>
     </div>
   );
 };

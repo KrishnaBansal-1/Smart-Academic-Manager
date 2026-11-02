@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar, Clock, CheckSquare, Sliders, AlertTriangle } from 'lucide-react';
+import { Clock, CheckSquare, Sliders, AlertTriangle } from 'lucide-react';
 
 export const ProfessorDashboard: React.FC = () => {
   const { user } = useAuth();

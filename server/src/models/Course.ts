@@ -8,6 +8,7 @@ export interface ICourse extends Document {
   credits: number;
   weeklyTheoryHours: number;
   weeklyLabHours: number;
+  professorIds: Types.ObjectId[];
   isActive: boolean;
 }
 
@@ -19,6 +20,7 @@ const CourseSchema = new Schema<ICourse>(
     credits: { type: Number, required: true, min: 1 },
     weeklyTheoryHours: { type: Number, required: true, default: 3, min: 0 },
     weeklyLabHours: { type: Number, required: true, default: 0, min: 0 },
+    professorIds: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }
