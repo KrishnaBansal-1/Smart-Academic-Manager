@@ -14,6 +14,7 @@ import { AttendanceRecord } from '../models/AttendanceRecord';
 import { SoftConstraint } from '../models/SoftConstraint';
 import { AcademicTerm } from '../models/AcademicTerm';
 import { CourseOffering } from '../models/CourseOffering';
+import { GenerationJob } from '../models/GenerationJob';
 import { InstitutionSettings, DEFAULT_PERIOD_GRID } from '../models/InstitutionSettings';
 
 const DEFAULT_PASSWORD = 'Password@123';
@@ -100,6 +101,7 @@ export const seedDatabase = async () => {
 
     console.log('🧹 Clearing previous dataset and models...');
     await Promise.all([
+      GenerationJob.deleteMany({}),
       CourseOffering.deleteMany({}),
       AcademicTerm.deleteMany({}),
       InstitutionSettings.deleteMany({}),

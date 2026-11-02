@@ -3,10 +3,17 @@ import mongoose from 'mongoose';
 import { createApp } from './app';
 import { connectDB } from './config/db';
 import { ENV } from './config/env';
+import { GenerationJob } from './models/GenerationJob';
 
 const startServer = async () => {
   try {
     await connectDB();
+
+    // Mark any interrupted running jobs as FAILED on startup
+    await GenerationJob.updateMany(
+      { status: 'RUNNING' },
+      { status: 'FAILED', error: 'Server restarted while generation was running' }
+    );
 
     const app = createApp();
     const server = http.createServer(app);

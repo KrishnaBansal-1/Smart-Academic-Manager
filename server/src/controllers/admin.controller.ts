@@ -73,7 +73,10 @@ const checkActiveTimetableReference = async (
   const timetableIds = publishedTimetables.map((t) => t._id);
 
   if (entity === 'professors') {
-    const inUse = await ScheduleSlot.exists({ timetableId: { $in: timetableIds }, professorId: id });
+    const inUse = await ScheduleSlot.exists({
+      timetableId: { $in: timetableIds },
+      $or: [{ professorIds: id }, { professorId: id }],
+    });
     if (inUse) return 'Warning: This professor is currently assigned to classes in a published timetable.';
   } else if (entity === 'courses') {
     const inUse = await ScheduleSlot.exists({ timetableId: { $in: timetableIds }, courseId: id });

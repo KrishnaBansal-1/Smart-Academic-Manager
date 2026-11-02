@@ -12,6 +12,8 @@ import settingsRoutes from './routes/settings.routes';
 import termRoutes from './routes/term.routes';
 import offeringRoutes from './routes/offering.routes';
 import constraintRoutes from './routes/constraint.routes';
+import timetableRoutes from './routes/timetable.routes';
+import generationJobRoutes from './routes/generationJob.routes';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -65,6 +67,8 @@ export const createApp = (): Application => {
   app.use('/api/v1/terms', termRoutes);
   app.use('/api/v1/offerings', offeringRoutes);
   app.use('/api/v1/constraints', constraintRoutes);
+  app.use('/api/v1/timetables', timetableRoutes);
+  app.use('/api/v1/generation-jobs', generationJobRoutes);
 
   // Fallback 404 handler
   app.use((_req: Request, res: Response) => {
