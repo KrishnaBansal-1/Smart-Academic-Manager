@@ -8,6 +8,7 @@ import { Course } from '../models/Course';
 import { Batch } from '../models/Batch';
 import { ScheduleSlot } from '../models/ScheduleSlot';
 import { ScheduleOverride } from '../models/ScheduleOverride';
+import { MinorExam } from '../models/MinorExam';
 import { Timetable } from '../models/Timetable';
 import { AttendanceSession } from '../models/AttendanceSession';
 import { AttendanceRecord } from '../models/AttendanceRecord';
@@ -108,6 +109,7 @@ export const seedDatabase = async () => {
       AttendanceRecord.deleteMany({}),
       AttendanceSession.deleteMany({}),
       ScheduleOverride.deleteMany({}),
+      MinorExam.deleteMany({}),
       ScheduleSlot.deleteMany({}),
       Timetable.deleteMany({}),
       SoftConstraint.deleteMany({}),

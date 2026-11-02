@@ -25,8 +25,14 @@ const ProfessorDashboard = lazy(() =>
 const ProfessorPreferences = lazy(() =>
   import('./pages/professor/ProfessorPreferences').then((m) => ({ default: m.ProfessorPreferences }))
 );
+const ProfessorSchedule = lazy(() =>
+  import('./pages/professor/ProfessorSchedule').then((m) => ({ default: m.ProfessorSchedule }))
+);
 const StudentDashboard = lazy(() =>
   import('./pages/student/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
+);
+const StudentTimetable = lazy(() =>
+  import('./pages/student/StudentTimetable').then((m) => ({ default: m.StudentTimetable }))
 );
 
 const queryClient = new QueryClient({
@@ -87,11 +93,13 @@ export const App: React.FC = () => {
                   <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
                     <Route path="/professor" element={<ProfessorDashboard />} />
                     <Route path="/professor/preferences" element={<ProfessorPreferences />} />
+                    <Route path="/professor/schedule" element={<ProfessorSchedule />} />
                   </Route>
 
                   {/* Role Protected: STUDENT */}
                   <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
                     <Route path="/student" element={<StudentDashboard />} />
+                    <Route path="/student/timetable" element={<StudentTimetable />} />
                   </Route>
 
                   {/* Catch-all */}

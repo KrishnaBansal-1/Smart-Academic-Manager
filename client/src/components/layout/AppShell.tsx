@@ -57,11 +57,13 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       case 'PROFESSOR':
         return [
           { to: '/professor', label: 'Faculty Portal', icon: LayoutDashboard },
+          { to: '/professor/schedule', label: 'My Schedule', icon: Calendar },
           { to: '/professor/preferences', label: 'Teaching Preferences', icon: Sliders },
         ];
       case 'STUDENT':
         return [
           { to: '/student', label: 'Student Portal', icon: GraduationCap },
+          { to: '/student/timetable', label: 'My Timetable', icon: Calendar },
         ];
       default:
         return [];

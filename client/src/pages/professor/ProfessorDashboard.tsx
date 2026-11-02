@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, Calendar, Loader2, Sliders, Users } from 'lucide-react';
+import { BookOpen, Calendar, Loader2, Sliders, Users, Clock, MapPin, ArrowRight } from 'lucide-react';
 import { apiClient } from '../../api/client';
+import { getTodaySchedule } from '../../api/schedule';
 import { CourseOffering } from '../../types';
 
 export const ProfessorDashboard: React.FC = () => {
@@ -32,6 +34,13 @@ export const ProfessorDashboard: React.FC = () => {
     };
   }, []);
 
+  const { data: todaySchedule, isLoading: isScheduleLoading } = useQuery({
+    queryKey: ['schedule', 'today', 'professor'],
+    queryFn: () => getTodaySchedule(),
+  });
+
+  const todayEntries = todaySchedule?.entries || [];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8 rounded-2xl bg-gradient-to-r from-blue-700 to-sky-800 p-6 text-white shadow-md sm:p-8">
@@ -45,13 +54,22 @@ export const ProfessorDashboard: React.FC = () => {
               availability preferences to assist the automatic timetable generator.
             </p>
           </div>
-          <Link
-            to="/professor/preferences"
-            className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition"
-          >
-            <Sliders className="h-4 w-4" />
-            Set Preferences
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/professor/schedule"
+              className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-white text-blue-800 hover:bg-blue-50 px-4 py-2.5 text-sm font-semibold shadow-sm transition"
+            >
+              <Calendar className="h-4 w-4" />
+              My Schedule
+            </Link>
+            <Link
+              to="/professor/preferences"
+              className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition"
+            >
+              <Sliders className="h-4 w-4" />
+              Set Preferences
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -140,23 +158,125 @@ export const ProfessorDashboard: React.FC = () => {
           )}
         </section>
 
+        {/* Real Teaching Schedule for Today */}
         <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col justify-between">
           <div>
-            <div className="mb-4 flex items-center gap-2.5">
-              <Calendar className="h-5 w-5 text-indigo-600" />
-              <h3 className="text-lg font-bold text-slate-800">Teaching Schedule</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Calendar className="h-5 w-5 text-indigo-600" />
+                <h3 className="text-lg font-bold text-slate-800">Today's Teaching Schedule</h3>
+              </div>
+              <Link
+                to="/professor/schedule"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:text-indigo-700 transition"
+              >
+                <span>Full Schedule</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
             </div>
-            <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-              <Calendar className="mx-auto h-8 w-8 text-slate-400" />
-              <p className="mt-3 font-semibold text-slate-800">No published schedule yet</p>
-              <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
-                Your weekly calendar and attendance tools will appear once the timetable for this term
-                is published.
-              </p>
-            </div>
+
+            {isScheduleLoading ? (
+              <div className="flex items-center justify-center py-12 text-sm text-slate-500">
+                <Loader2 className="h-5 w-5 animate-spin mr-2 text-indigo-600" />
+                Loading schedule...
+              </div>
+            ) : !todaySchedule?.published ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+                <Calendar className="mx-auto h-8 w-8 text-slate-400" />
+                <p className="mt-3 font-semibold text-slate-800">No published schedule yet</p>
+                <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500">
+                  Your weekly calendar and teaching schedule will appear once the timetable for this
+                  term is published.
+                </p>
+              </div>
+            ) : todayEntries.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-5 py-8 text-center">
+                <Calendar className="mx-auto h-8 w-8 text-slate-300" />
+                <p className="mt-3 font-semibold text-slate-700">No classes scheduled for today</p>
+                <p className="mt-1 text-xs text-slate-500">You have no teaching periods scheduled today.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {todayEntries.map((entry) => (
+                  <div
+                    key={entry.occurrenceId}
+                    className={`rounded-xl border p-3.5 transition ${
+                      entry.state === 'CANCELLED'
+                        ? 'border-red-200 bg-red-50/60 opacity-75'
+                        : entry.state === 'EXAM'
+                        ? 'border-purple-200 bg-purple-50/60'
+                        : entry.state === 'MOVED_IN'
+                        ? 'border-emerald-200 bg-emerald-50/60'
+                        : 'border-slate-200 bg-slate-50/50 hover:bg-slate-50'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-mono text-xs font-bold ${
+                              entry.state === 'CANCELLED'
+                                ? 'line-through text-slate-400'
+                                : 'text-indigo-700'
+                            }`}
+                          >
+                            {entry.course.code}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-500">
+                            {entry.batch.name} (P{entry.period})
+                          </span>
+                        </div>
+                        <h4
+                          className={`mt-0.5 text-sm font-bold text-slate-900 ${
+                            entry.state === 'CANCELLED' ? 'line-through text-slate-400' : ''
+                          }`}
+                        >
+                          {entry.course.title}
+                        </h4>
+                      </div>
+                      {entry.state === 'CANCELLED' && (
+                        <span className="rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700">
+                          Cancelled
+                        </span>
+                      )}
+                      {entry.state === 'EXAM' && (
+                        <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-bold text-purple-800">
+                          Exam
+                        </span>
+                      )}
+                      {entry.state === 'MOVED_IN' && (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                          Rescheduled
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-2.5 flex items-center justify-between text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3.5 w-3.5 text-slate-400" />
+                        {entry.startTime} - {entry.endTime}
+                      </span>
+                      {entry.classroom && (
+                        <span className="flex items-center gap-1 font-medium text-slate-600">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                          {entry.classroom.name}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="mt-6 border-t border-slate-100 pt-4">
+          <div className="mt-6 border-t border-slate-100 pt-4 flex flex-col gap-2">
+            <Link
+              to="/professor/schedule"
+              className="flex items-center justify-between text-xs font-semibold text-indigo-700 hover:text-indigo-800"
+            >
+              <span>View full weekly calendar</span>
+              <Calendar className="h-3.5 w-3.5" />
+            </Link>
             <Link
               to="/professor/preferences"
               className="flex items-center justify-between text-xs font-semibold text-sky-700 hover:text-sky-800"
