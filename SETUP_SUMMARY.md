@@ -55,9 +55,13 @@ Smart-Academic-Manager/
 │       │   ├── AttendanceSession.ts    # Date-mapped attendance instances
 │       │   └── AttendanceRecord.ts     # Individual student attendance logs
 │       ├── controllers/
-│       │   └── auth.controller.ts      # Login, token refresh, and profile logic
+│       │   ├── auth.controller.ts      # Login, token refresh, and profile logic
+│       │   ├── admin.controller.ts     # Academic records and password management
+│       │   └── professor.controller.ts # Assigned course view
 │       ├── routes/
-│       │   └── auth.routes.ts          # Validated auth endpoints
+│       │   ├── auth.routes.ts          # Validated auth endpoints
+│       │   ├── admin.routes.ts         # ADMIN-only management endpoints
+│       │   └── professor.routes.ts    # PROFESSOR-only course endpoint
 │       └── utils/
 │           ├── response.ts             # Standardized JSON response envelope
 │           └── seeder.ts               # Master database seeder script
@@ -89,7 +93,8 @@ Smart-Academic-Manager/
             ├── auth/
             │   └── Login.tsx           # Login screen with 1-click demo filler
             ├── admin/
-            │   └── AdminDashboard.tsx  # Admin command center & module access
+            │   ├── AdminDashboard.tsx  # Admin command center & module access
+            │   └── AdminManagement.tsx # Student, faculty, course, section, room management
             ├── professor/
             │   └── ProfessorDashboard.tsx # Faculty portal (attendance & constraints)
             └── student/
@@ -127,7 +132,10 @@ Smart-Academic-Manager/
    - **`SoftConstraint`**: Stores faculty time preferences, non-teaching blocks, and daily lecture hour caps.
    - **`ScheduleOverride`**: Supports temporary class cancellations and 3-way rescheduling.
 6. **Master Seed Script (`server/src/utils/seeder.ts`):**
-   - Populates departments, classrooms (theory & labs), courses, batches, and demo accounts across all three user roles.
+   - Replaces the previous demo records with CSE III-A, CSE III-B, and AI&DS III-A for academic year 2026-2027.
+   - Seeds all named faculty, course assignments, C302/A306, and Software Engineering, Computing, and Security Labs.
+   - Creates five section-labeled student accounts per section. Student names are placeholders because the timetables do not provide names.
+   - Clears attendance, timetable, constraint, and master-record collections before seeding.
 
 ---
 
@@ -145,24 +153,25 @@ Smart-Academic-Manager/
 5. **Role-Tailored Dashboards:**
    - **Login Page (`Login.tsx`)**: Includes single-click demo credential autofill for Admin, Professor, and Student.
    - **Admin Dashboard (`AdminDashboard.tsx`)**: Institutional statistics and launching points for Timetable Generation & Visual Drag-and-Drop Editor.
-   - **Professor Dashboard (`ProfessorDashboard.tsx`)**: Displays daily teaching assignments, quick "Take Attendance" triggers, and soft constraint controls.
-   - **Student Dashboard (`StudentDashboard.tsx`)**: View-only batch timetable and subject-wise attendance tracking with color-coded status badges reflecting the updated criteria:
-     - **$\ge 80\%$**: `Good Standing` (Green)
-     - **$70\% - 79.99\%$**: `Warning Zone` (Yellow)
-     - **$< 70\%$**: `Critical Defaulter Alert` (Red)
+   - **Admin Management (`AdminManagement.tsx`)**: Manages academic records, course-to-professor assignments, record deactivation, and student/professor password changes.
+   - **Professor Dashboard (`ProfessorDashboard.tsx`)**: Shows courses assigned to the signed-in professor.
+   - **Student Dashboard (`StudentDashboard.tsx`)**: Shows the student's account details and empty schedule/attendance states until live records are created.
 
 ---
 
 ## 4. Default Seed Accounts for Testing
 
-Once seeded via `npm run seed`, the following accounts are ready for testing:
+Once seeded via `npm run seed`, the current timetable dataset for NIT Warangal is loaded. The seed creates CSE III-A, CSE III-B, and AI&DS III-A for academic year 2026-2027, with at least five student accounts in each section; all listed faculty and course assignments; and rooms C302, A306, Software Engineering Lab, Computing Lab, and Security Lab.
+
+The seed replaces the previous demo master records. Its sample account credentials are:
 
 | Role | Email | Password | Primary Purpose |
 | :--- | :--- | :--- | :--- |
 | **ADMIN** | `admin@sam.edu` | `Admin@123` | Master control, schedule generation, drag-drop editor |
-| **PROFESSOR** | `prof.sharma@sam.edu` | `Password@123` | View assigned lectures, mark attendance, submit preferences |
-| **PROFESSOR** | `prof.patel@sam.edu` | `Password@123` | Secondary faculty for conflict/room allocation testing |
-| **STUDENT** | `student.aarav@sam.edu` | `Password@123` | View batch timetable & personal attendance percentage |
+| **PROFESSOR** | `prof.rimjhim@sam.edu` | `Password@123` | Seeded faculty account |
+| **STUDENT** | `student.csea01@sam.edu` | `Password@123` | First CSE III-A roster account |
+
+Every seeded professor and student account uses `Password@123`. The admin can change those passwords from Academic Records. Student names are generated section-based placeholders because the provided timetables do not include student names.
 
 ---
 

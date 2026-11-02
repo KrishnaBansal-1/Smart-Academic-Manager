@@ -94,3 +94,15 @@ export const deactivateAdminResource = asyncHandler(async (req, res) => {
   if (!item) throw new ApiError(404, `${config.label} not found`);
   sendSuccess(res, { item }, `${config.label} removed`);
 });
+
+export const changeManagedUserPassword = asyncHandler(async (req, res) => {
+  const user = await User.findOne({
+    _id: req.params.id,
+    role: { $in: ['STUDENT', 'PROFESSOR'] },
+  });
+  if (!user) throw new ApiError(404, 'Student or professor not found');
+
+  user.passwordHash = await bcrypt.hash(req.body.password, 12);
+  await user.save();
+  sendSuccess(res, undefined, `Password updated for ${user.firstName} ${user.lastName}`);
+});

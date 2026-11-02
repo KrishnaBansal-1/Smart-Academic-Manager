@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { authenticate } from '../middlewares/auth.middleware';
 import { authorize } from '../middlewares/rbac.middleware';
 import { validateRequest } from '../middlewares/validate.middleware';
-import { createAdminResource, deactivateAdminResource, listAdminResources, updateAdminResource } from '../controllers/admin.controller';
+import { changeManagedUserPassword, createAdminResource, deactivateAdminResource, listAdminResources, updateAdminResource } from '../controllers/admin.controller';
 
 const router = Router();
 const id = z.string().regex(/^[a-f\d]{24}$/i, 'Invalid record id');
@@ -20,6 +20,7 @@ const semester = z.object({ name, departmentId: objectId, semester: positiveInt.
 const room = z.object({ name, building: name, capacity: positiveInt, type: z.enum(['THEORY', 'LABORATORY']), hasProjector: z.boolean() });
 const entitySchema = z.object({ params: z.object({ entity: z.enum(['students', 'professors', 'courses', 'semesters', 'rooms', 'departments']) }), body: z.object({}).passthrough(), query: z.object({}).passthrough() });
 const itemSchema = z.object({ params: z.object({ entity: z.enum(['students', 'professors', 'courses', 'semesters', 'rooms']), id }), body: z.object({}).passthrough(), query: z.object({}).passthrough() });
+const passwordSchema = z.object({ params: z.object({ id }), body: z.object({ password: z.string().min(8).max(100) }), query: z.object({}).passthrough() });
 
 router.use(authenticate, authorize(['ADMIN']));
 router.get('/:entity', validateRequest(entitySchema), listAdminResources);
@@ -37,6 +38,7 @@ router.patch('/:entity/:id', validateRequest(z.union([
   z.object({ params: z.object({ entity: z.literal('semesters'), id }), body: semester.partial(), query: z.object({}).passthrough() }),
   z.object({ params: z.object({ entity: z.literal('rooms'), id }), body: room.partial(), query: z.object({}).passthrough() }),
 ])), updateAdminResource);
+router.patch('/users/:id/password', validateRequest(passwordSchema), changeManagedUserPassword);
 router.delete('/:entity/:id', validateRequest(itemSchema), deactivateAdminResource);
 
 export default router;

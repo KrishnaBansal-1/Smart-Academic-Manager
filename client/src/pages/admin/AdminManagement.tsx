@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowLeft, BookOpen, Building2, CalendarDays, Check, CirclePlus, GraduationCap, Loader2, Pencil, Search, Trash2, Users, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, Building2, CalendarDays, Check, CirclePlus, GraduationCap, KeyRound, Loader2, Pencil, Search, Trash2, Users, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { apiClient } from '../../api/client';
 
@@ -38,6 +38,12 @@ export const AdminManagement: React.FC = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState<Row | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
 
   const loadItems = useCallback(async (target: Entity) => {
@@ -142,8 +148,36 @@ export const AdminManagement: React.FC = () => {
     setError('');
     try {
       await apiClient.delete(`/admin/${entity}/${item._id}`);
+      setNotice(`${label} was removed.`);
       await loadItems(entity);
     } catch (requestError) { setError(getErrorMessage(requestError)); }
+  };
+
+  const handlePasswordChange = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError('');
+    if (newPassword.length < 8) {
+      setPasswordError('Use at least 8 characters for the new password.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError('The passwords do not match.');
+      return;
+    }
+    if (!passwordTarget) return;
+
+    setIsChangingPassword(true);
+    try {
+      await apiClient.patch(`/admin/users/${passwordTarget._id}/password`, { password: newPassword });
+      setNotice(`Password updated for ${passwordTarget.firstName} ${passwordTarget.lastName}.`);
+      setPasswordTarget(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (requestError) {
+      setPasswordError(getErrorMessage(requestError));
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const departmentOptions = departments.map((department) => <option key={department._id} value={department._id}>{department.code} · {department.name}</option>);
@@ -207,6 +241,7 @@ export const AdminManagement: React.FC = () => {
     </div>
 
     {error && <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}<button aria-label="Dismiss error" className="ml-auto" onClick={() => setError('')}><X className="h-4 w-4" /></button></div>}
+    {notice && <div role="status" className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800"><Check className="h-4 w-4 shrink-0" />{notice}<button aria-label="Dismiss message" className="ml-auto" onClick={() => setNotice('')}><X className="h-4 w-4" /></button></div>}
 
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:px-6">
@@ -217,7 +252,7 @@ export const AdminManagement: React.FC = () => {
         {filteredItems.map((item) => <div key={item._id} className="flex flex-wrap items-center gap-3 px-5 py-4 sm:px-6">
           <div className="flex min-w-0 flex-1 items-center gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600"><section.icon className="h-5 w-5" /></div><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="truncate text-sm font-semibold text-slate-900">{getPrimary(item)}</p><span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${item.isActive === false ? 'bg-slate-100 text-slate-500' : 'bg-emerald-50 text-emerald-700'}`}>{item.isActive === false ? 'Inactive' : 'Active'}</span></div><p className="truncate text-xs text-slate-500">{getSecondary(item)}</p></div></div>
           <div className="hidden min-w-32 text-sm text-slate-600 md:block">{getDetail(item)}</div>
-          <div className="flex items-center gap-1"><button onClick={() => openEdit(item)} title={`Edit ${section.singular}`} className="rounded-lg p-2 text-slate-500 transition hover:bg-sky-50 hover:text-sky-700"><Pencil className="h-4 w-4" /></button>{item.isActive !== false && <button onClick={() => void handleRemove(item)} title={`Remove ${section.singular}`} className="rounded-lg p-2 text-slate-500 transition hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}</div>
+          <div className="flex items-center gap-1">{(entity === 'students' || entity === 'professors') && <button onClick={() => { setPasswordTarget(item); setNewPassword(''); setConfirmPassword(''); setPasswordError(''); }} title="Change password" aria-label={`Change password for ${item.firstName} ${item.lastName}`} className="rounded-lg p-2 text-slate-500 transition hover:bg-amber-50 hover:text-amber-700"><KeyRound className="h-4 w-4" /></button>}<button onClick={() => openEdit(item)} title={`Edit ${section.singular}`} className="rounded-lg p-2 text-slate-500 transition hover:bg-sky-50 hover:text-sky-700"><Pencil className="h-4 w-4" /></button>{item.isActive !== false && <button onClick={() => void handleRemove(item)} title={`Remove ${section.singular}`} className="rounded-lg p-2 text-slate-500 transition hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}</div>
         </div>)}
       </div>}
     </section>
@@ -226,6 +261,13 @@ export const AdminManagement: React.FC = () => {
       <div role="dialog" aria-modal="true" aria-labelledby="management-form-title" className="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:max-w-2xl sm:rounded-2xl">
         <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-100 bg-white px-5 py-4 sm:px-6"><div><h2 id="management-form-title" className="text-lg font-bold text-slate-900">{editing ? 'Edit' : 'Add'} {section.singular}</h2><p className="mt-1 text-sm text-slate-500">Enter the details below. Required fields are marked by the browser.</p></div><button onClick={() => setIsFormOpen(false)} aria-label="Close form" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
         <form onSubmit={handleSave} className="p-5 sm:p-6">{error && <div role="alert" className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{error}</div>}<div className="grid gap-4 sm:grid-cols-2">{renderFormFields()}</div><div className="mt-7 flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setIsFormOpen(false)} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button><button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-60">{isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}{isSaving ? 'Saving...' : editing ? 'Save changes' : `Add ${section.singular}`}</button></div></form>
+      </div>
+    </div>}
+
+    {passwordTarget && <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-900/40 p-0 sm:items-center sm:p-4">
+      <div role="dialog" aria-modal="true" aria-labelledby="password-dialog-title" className="w-full rounded-t-2xl bg-white shadow-2xl sm:max-w-md sm:rounded-2xl">
+        <div className="flex items-start justify-between border-b border-slate-100 px-5 py-4"><div><h2 id="password-dialog-title" className="text-lg font-bold text-slate-900">Change password</h2><p className="mt-1 text-sm text-slate-500">{passwordTarget.firstName} {passwordTarget.lastName} · {passwordTarget.email}</p></div><button onClick={() => setPasswordTarget(null)} aria-label="Close password form" className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X className="h-5 w-5" /></button></div>
+        <form onSubmit={handlePasswordChange} className="space-y-4 p-5">{passwordError && <div role="alert" className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700"><AlertCircle className="h-4 w-4 shrink-0" />{passwordError}</div>}<label className={labelClass}>New password<input autoComplete="new-password" type="password" required minLength={8} value={newPassword} onChange={(event) => setNewPassword(event.target.value)} className={fieldClass} /></label><label className={labelClass}>Confirm new password<input autoComplete="new-password" type="password" required minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className={fieldClass} /></label><p className="text-xs text-slate-500">The new password takes effect immediately.</p><div className="flex justify-end gap-2 border-t border-slate-100 pt-4"><button type="button" onClick={() => setPasswordTarget(null)} className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button><button type="submit" disabled={isChangingPassword} className="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-wait disabled:opacity-60">{isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}{isChangingPassword ? 'Updating...' : 'Update password'}</button></div></form>
       </div>
     </div>}
   </div>;

@@ -120,14 +120,14 @@ export const Login: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoFill('prof.sharma@sam.edu', 'Password@123')}
+                onClick={() => handleDemoFill('prof.rimjhim@sam.edu', 'Password@123')}
                 className="py-1.5 px-2 text-xs font-medium rounded border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors"
               >
                 Professor
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoFill('student.aarav@sam.edu', 'Password@123')}
+                onClick={() => handleDemoFill('student.csea01@sam.edu', 'Password@123')}
                 className="py-1.5 px-2 text-xs font-medium rounded border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors"
               >
                 Student

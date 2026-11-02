@@ -1,10 +1,43 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Calendar, Users, Building, BookOpen, Play, CheckSquare, Settings2, ArrowRight } from 'lucide-react';
+import { apiClient } from '../../api/client';
+
+type AdminStats = { professors: number | null; rooms: number | null; courses: number | null; term: string };
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();
+  const [stats, setStats] = useState<AdminStats>({ professors: null, rooms: null, courses: null, term: '—' });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadStats = async () => {
+      try {
+        const [professorResult, roomResult, courseResult, semesterResult] = await Promise.all([
+          apiClient.get<{ data: { items: Array<{ isActive: boolean }> } }>('/admin/professors'),
+          apiClient.get<{ data: { items: Array<{ isActive: boolean }> } }>('/admin/rooms'),
+          apiClient.get<{ data: { items: Array<{ isActive: boolean }> } }>('/admin/courses'),
+          apiClient.get<{ data: { items: Array<{ isActive: boolean; semester: number; academicYear: string }> } }>('/admin/semesters'),
+        ]);
+        if (!isMounted) return;
+        const activeTerm = semesterResult.data.data.items.find((item) => item.isActive);
+        setStats({
+          professors: professorResult.data.data.items.filter((item) => item.isActive).length,
+          rooms: roomResult.data.data.items.filter((item) => item.isActive).length,
+          courses: courseResult.data.data.items.filter((item) => item.isActive).length,
+          term: activeTerm ? `${activeTerm.academicYear} · Sem ${activeTerm.semester}` : 'No active term',
+        });
+      } catch {
+        if (isMounted) setStats({ professors: null, rooms: null, courses: null, term: 'Unavailable' });
+      } finally {
+        if (isMounted) setStatsLoading(false);
+      }
+    };
+    void loadStats();
+    return () => { isMounted = false; };
+  }, []);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -24,7 +57,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Active Faculty</p>
-            <p className="text-xl font-bold text-slate-800">12 Professors</p>
+            <p className="text-xl font-bold text-slate-800">{statsLoading ? 'Loading…' : stats.professors === null ? 'Unavailable' : `${stats.professors} Professors`}</p>
           </div>
         </div>
 
@@ -34,7 +67,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Classrooms & Labs</p>
-            <p className="text-xl font-bold text-slate-800">8 Rooms Available</p>
+            <p className="text-xl font-bold text-slate-800">{statsLoading ? 'Loading…' : stats.rooms === null ? 'Unavailable' : `${stats.rooms} Rooms`}</p>
           </div>
         </div>
 
@@ -44,7 +77,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Courses</p>
-            <p className="text-xl font-bold text-slate-800">14 Registered</p>
+            <p className="text-xl font-bold text-slate-800">{statsLoading ? 'Loading…' : stats.courses === null ? 'Unavailable' : `${stats.courses} Courses`}</p>
           </div>
         </div>
 
@@ -54,7 +87,7 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <p className="text-xs text-slate-500 font-medium">Current Term</p>
-            <p className="text-xl font-bold text-slate-800">2026-2027 Sem 3</p>
+            <p className="text-base font-bold text-slate-800">{statsLoading ? 'Loading…' : stats.term}</p>
           </div>
         </div>
       </div>
