@@ -82,6 +82,11 @@ const sections = [
 ];
 
 export const seedDatabase = async () => {
+  if (ENV.NODE_ENV === 'production') {
+    console.error('❌ Refusing to run seeder in production environment.');
+    process.exit(1);
+  }
+
   try {
     console.log('🌱 Connecting to database for seeding...');
     await mongoose.connect(ENV.MONGO_URI);
@@ -154,14 +159,12 @@ export const seedDatabase = async () => {
       departmentId: departmentIds[section.department],
       semester: 1,
       academicYear: '2026-2027',
-      studentCount: 0,
-      students: [],
     })));
 
     for (let sectionIndex = 0; sectionIndex < sections.length; sectionIndex += 1) {
       const section = sections[sectionIndex];
       const batch = batchRecords[sectionIndex];
-      const studentRecords = await User.create(Array.from({ length: 5 }, (_, offset) => {
+      await User.create(Array.from({ length: 5 }, (_, offset) => {
         const rollIndex = offset + 1;
         const sectionCode = section.name.includes('CSE-III-A') ? 'csea' : section.name.includes('CSE-III-B') ? 'cseb' : 'aidsa';
         return {
@@ -175,9 +178,6 @@ export const seedDatabase = async () => {
           rollNumber: `${section.rollPrefix}${String(rollIndex).padStart(2, '0')}`,
         };
       }));
-      batch.students = studentRecords.map((student) => student._id);
-      batch.studentCount = studentRecords.length;
-      await batch.save();
     }
 
     console.log('\n=============================================');

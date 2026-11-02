@@ -1,5 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole, AuthResponse } from '../types';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  ReactNode,
+} from 'react';
+import { User, UserRole, AuthResponse } from '../types/auth';
 import { apiClient } from '../api/client';
 
 interface AuthContextType {
@@ -8,34 +16,64 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   getDashboardRoute: (role?: UserRole) => string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const normalizeUser = (user: User | (Record<string, unknown> & { id?: string; _id?: string })): User => {
+  const id = String(user.id || user._id);
+  return {
+    ...(user as User),
+    id,
+    _id: id,
+  };
+};
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
+  // Validate session with /auth/me at boot
   useEffect(() => {
-    const storedToken = localStorage.getItem('sam_access_token');
-    const storedUser = localStorage.getItem('sam_user');
+    let isMounted = true;
+    const initAuth = async () => {
+      const storedToken = localStorage.getItem('sam_access_token');
 
-    if (storedToken && storedUser) {
-      try {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        localStorage.removeItem('sam_access_token');
-        localStorage.removeItem('sam_user');
+      if (!storedToken) {
+        if (isMounted) setIsLoading(false);
+        return;
       }
-    }
-    setIsLoading(false);
+
+      try {
+        const response = await apiClient.get<{ success: boolean; data: { user: User } }>('/auth/me');
+        if (isMounted && response.data?.data?.user) {
+          const verifiedUser = normalizeUser(response.data.data.user);
+          setUser(verifiedUser);
+          setToken(storedToken);
+          localStorage.setItem('sam_user', JSON.stringify(verifiedUser));
+        }
+      } catch {
+        if (isMounted) {
+          localStorage.removeItem('sam_access_token');
+          localStorage.removeItem('sam_user');
+          setUser(null);
+          setToken(null);
+        }
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    void initAuth();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const getDashboardRoute = (role?: UserRole): string => {
+  const getDashboardRoute = useCallback((role?: UserRole): string => {
     const targetRole = role || user?.role;
     switch (targetRole) {
       case 'ADMIN':
@@ -47,47 +85,53 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       default:
         return '/login';
     }
-  };
+  }, [user?.role]);
 
-  const login = async (email: string, password: string): Promise<User> => {
+  const login = useCallback(async (email: string, password: string): Promise<User> => {
     const response = await apiClient.post<{ success: boolean; data: AuthResponse }>(
       '/auth/login',
       { email, password }
     );
 
-    const { user: loggedInUser, accessToken } = response.data.data;
+    const { user: rawUser, accessToken } = response.data.data;
+    const normalized = normalizeUser(rawUser);
 
-    setUser(loggedInUser);
+    setUser(normalized);
     setToken(accessToken);
     localStorage.setItem('sam_access_token', accessToken);
-    localStorage.setItem('sam_user', JSON.stringify(loggedInUser));
+    localStorage.setItem('sam_user', JSON.stringify(normalized));
 
-    return loggedInUser;
-  };
+    return normalized;
+  }, []);
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('sam_access_token');
-    localStorage.removeItem('sam_user');
-    window.location.href = '/login';
-  };
+  const logout = useCallback(async () => {
+    try {
+      await apiClient.post('/auth/logout');
+    } catch {
+      // Ignore network errors on logout
+    } finally {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem('sam_access_token');
+      localStorage.removeItem('sam_user');
+      window.location.href = '/login';
+    }
+  }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: !!user && !!token,
-        isLoading,
-        login,
-        logout,
-        getDashboardRoute,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      isAuthenticated: !!user && !!token,
+      isLoading,
+      login,
+      logout,
+      getDashboardRoute,
+    }),
+    [user, token, isLoading, login, logout, getDashboardRoute]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = (): AuthContextType => {

@@ -6,8 +6,6 @@ export interface IBatch extends Document {
   departmentId: Types.ObjectId;
   semester: number;
   academicYear: string;
-  studentCount: number;
-  students: Types.ObjectId[];
   isActive: boolean;
 }
 
@@ -17,8 +15,6 @@ const BatchSchema = new Schema<IBatch>(
     departmentId: { type: Schema.Types.ObjectId, ref: 'Department', required: true, index: true },
     semester: { type: Number, required: true, min: 1, max: 12 },
     academicYear: { type: String, required: true, trim: true }, // e.g. "2026-2027"
-    studentCount: { type: Number, required: true, default: 0, min: 0 },
-    students: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

@@ -13,6 +13,7 @@ export interface IUser extends Document {
   departmentId?: Types.ObjectId;
   batchId?: Types.ObjectId;
   rollNumber?: string;
+  tokenVersion: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -27,7 +28,6 @@ const UserSchema = new Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     passwordHash: {
       type: String,
@@ -62,9 +62,13 @@ const UserSchema = new Schema<IUser>(
     },
     rollNumber: {
       type: String,
-      sparse: true,
       uppercase: true,
       trim: true,
+    },
+    tokenVersion: {
+      type: Number,
+      default: 0,
+      required: true,
     },
     isActive: {
       type: Boolean,
@@ -81,6 +85,15 @@ const UserSchema = new Schema<IUser>(
         return safeRecord;
       },
     },
+  }
+);
+
+// Partial unique index on rollNumber (sparse/partial filter so null/undefined roll numbers for profs/admins don't conflict)
+UserSchema.index(
+  { rollNumber: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { rollNumber: { $type: 'string' } },
   }
 );
 

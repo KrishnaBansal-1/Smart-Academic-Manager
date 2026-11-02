@@ -1,17 +1,17 @@
 import { Response } from 'express';
 
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   message?: string;
   data?: T;
-  errors?: any;
+  errors?: unknown;
 }
 
 export class ApiError extends Error {
   public statusCode: number;
-  public errors?: any;
+  public errors?: unknown;
 
-  constructor(statusCode: number, message: string, errors?: any) {
+  constructor(statusCode: number, message: string, errors?: unknown) {
     super(message);
     this.statusCode = statusCode;
     this.errors = errors;
@@ -36,7 +36,7 @@ export const sendError = (
   res: Response,
   message = 'An unexpected error occurred',
   statusCode = 500,
-  errors?: any
+  errors?: unknown
 ): Response => {
   return res.status(statusCode).json({
     success: false,

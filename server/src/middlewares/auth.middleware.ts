@@ -3,16 +3,17 @@ import jwt from 'jsonwebtoken';
 import { ENV } from '../config/env';
 import { ApiError } from '../utils/response';
 import { User, IUser, UserRole } from '../models/User';
-import { Types } from 'mongoose';
 
 export interface JwtPayload {
   id: string;
   role: UserRole;
   email: string;
+  tokenVersion?: number;
   departmentId?: string;
   batchId?: string;
 }
 
+/* eslint-disable @typescript-eslint/no-namespace */
 declare global {
   namespace Express {
     interface Request {
@@ -20,6 +21,7 @@ declare global {
     }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 export const authenticate = async (
   req: Request,
@@ -34,7 +36,9 @@ export const authenticate = async (
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, ENV.JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, ENV.JWT_SECRET, {
+      algorithms: ['HS256'],
+    }) as JwtPayload;
 
     const user = await User.findById(decoded.id);
 

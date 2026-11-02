@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { Navbar } from './components/common/Navbar';
+import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
-import { Login } from './pages/auth/Login';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
-import { ProfessorDashboard } from './pages/professor/ProfessorDashboard';
-import { StudentDashboard } from './pages/student/StudentDashboard';
-import { AdminManagement } from './pages/admin/AdminManagement';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+
+const Login = lazy(() => import('./pages/auth/Login').then((m) => ({ default: m.Login })));
+const AdminDashboard = lazy(() =>
+  import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard }))
+);
+const AdminManagement = lazy(() =>
+  import('./pages/admin/AdminManagement').then((m) => ({ default: m.AdminManagement }))
+);
+const ProfessorDashboard = lazy(() =>
+  import('./pages/professor/ProfessorDashboard').then((m) => ({ default: m.ProfessorDashboard }))
+);
+const StudentDashboard = lazy(() =>
+  import('./pages/student/StudentDashboard').then((m) => ({ default: m.StudentDashboard }))
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,50 +30,67 @@ const queryClient = new QueryClient({
 });
 
 const RootRedirect: React.FC = () => {
-  const { isAuthenticated, user, getDashboardRoute } = useAuth();
+  const { isAuthenticated, user, isLoading, getDashboardRoute } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-600"></div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
+
   return <Navigate to={getDashboardRoute(user.role)} replace />;
 };
 
+const PageLoader: React.FC = () => (
+  <div className="flex h-64 items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-600"></div>
+  </div>
+);
+
 export const App: React.FC = () => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <div className="min-h-screen flex flex-col bg-slate-50 text-slate-800">
-            <Navbar />
-            <main className="flex-1">
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />} />
-                <Route path="/" element={<RootRedirect />} />
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <AppShell>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/" element={<RootRedirect />} />
 
-                {/* Role Protected: ADMIN */}
-                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                  <Route path="/admin" element={<AdminDashboard />} />
-                  <Route path="/admin/manage" element={<AdminManagement />} />
-                </Route>
+                  {/* Role Protected: ADMIN */}
+                  <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                    <Route path="/admin" element={<AdminDashboard />} />
+                    <Route path="/admin/manage" element={<AdminManagement />} />
+                  </Route>
 
-                {/* Role Protected: PROFESSOR */}
-                <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
-                  <Route path="/professor" element={<ProfessorDashboard />} />
-                </Route>
+                  {/* Role Protected: PROFESSOR */}
+                  <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
+                    <Route path="/professor" element={<ProfessorDashboard />} />
+                  </Route>
 
-                {/* Role Protected: STUDENT */}
-                <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
-                  <Route path="/student" element={<StudentDashboard />} />
-                </Route>
+                  {/* Role Protected: STUDENT */}
+                  <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+                    <Route path="/student" element={<StudentDashboard />} />
+                  </Route>
 
-                {/* Catch-all */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </main>
-          </div>
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+                  {/* Catch-all */}
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </AppShell>
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
 
