@@ -5,6 +5,13 @@ import { sendSuccess, ApiError } from '../utils/response';
 import { AcademicTerm } from '../models/AcademicTerm';
 import { Timetable } from '../models/Timetable';
 import { ScheduleSlot } from '../models/ScheduleSlot';
+import { ScheduleOverride } from '../models/ScheduleOverride';
+import { MinorExam } from '../models/MinorExam';
+import { Booking } from '../models/Booking';
+import { AttendanceSession } from '../models/AttendanceSession';
+import { User } from '../models/User';
+import { NotificationService } from '../services/notification.service';
+import { runWithTransaction } from '../utils/transaction';
 import { isValidDateKey, getISODayOfWeek, IPeriodGridItem } from '../utils/dateKey';
 
 const periodSchema = z.object({
@@ -211,10 +218,36 @@ export const previewHoliday = asyncHandler(async (req: Request, res: Response) =
     periodIndex: number;
   }> = [];
 
+  const blockingIssues: string[] = [];
+
   if (timetableIds.length > 0) {
+    // Check if there are moved-in classes on this date
+    const movedInClasses = await ScheduleOverride.find({
+      status: 'RESCHEDULED',
+      'target.dateKey': dateKey,
+    });
+    if (movedInClasses.length > 0) {
+      blockingIssues.push(
+        `${movedInClasses.length} rescheduled class(es) are targeting this date and must be resolved first.`
+      );
+    }
+
+    // Check if there are minor exams on this date
+    const scheduledExams = await MinorExam.find({
+      termId: term._id,
+      status: 'SCHEDULED',
+      dateKey,
+    });
+    if (scheduledExams.length > 0) {
+      blockingIssues.push(
+        `${scheduledExams.length} minor exam(s) are scheduled on this date and must be resolved first.`
+      );
+    }
+
     const slots = await ScheduleSlot.find({
       timetableId: { $in: timetableIds },
       dayOfWeek,
+      placed: true,
     })
       .populate('courseId', 'code title')
       .populate('batchId', 'name');
@@ -240,6 +273,8 @@ export const previewHoliday = asyncHandler(async (req: Request, res: Response) =
       dayOfWeek,
       affectedClassesCount: affectedClasses.length,
       affectedClasses,
+      canDeclareHoliday: blockingIssues.length === 0,
+      blockingIssues,
     },
     'Holiday preview generated'
   );
@@ -262,8 +297,108 @@ export const addHoliday = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(400, `Holiday already exists on date ${dateKey}`);
   }
 
-  term.holidays.push({ dateKey, label });
-  await term.save();
+  const publishedTimetables = await Timetable.find({ termId: term._id, status: 'PUBLISHED' }).select('_id');
+  const timetableIds = publishedTimetables.map((t) => t._id);
+
+  if (timetableIds.length > 0) {
+    // Check moved-in classes or exams on this date: these must be resolved first!
+    const movedInCount = await ScheduleOverride.countDocuments({
+      status: 'RESCHEDULED',
+      'target.dateKey': dateKey,
+    });
+    if (movedInCount > 0) {
+      throw new ApiError(
+        409,
+        `Cannot declare holiday: there are ${movedInCount} rescheduled class(es) on this date that must be resolved first`
+      );
+    }
+
+    const examCount = await MinorExam.countDocuments({
+      termId: term._id,
+      status: 'SCHEDULED',
+      dateKey,
+    });
+    if (examCount > 0) {
+      throw new ApiError(
+        409,
+        `Cannot declare holiday: there are ${examCount} minor exam(s) scheduled on this date that must be resolved first`
+      );
+    }
+  }
+
+  const dayOfWeek = getISODayOfWeek(dateKey);
+
+  await runWithTransaction(async (session) => {
+    if (timetableIds.length > 0) {
+      const slots = await ScheduleSlot.find({
+        timetableId: { $in: timetableIds },
+        dayOfWeek,
+        placed: true,
+      })
+        .populate('courseId')
+        .populate('batchId')
+        .populate('professorIds');
+
+      for (const slot of slots) {
+        // Release weekly bookings on dateKey
+        await Booking.deleteMany({ ownerId: slot._id, dateKey }, { session });
+
+        // Upsert ScheduleOverride with source: HOLIDAY
+        await ScheduleOverride.findOneAndUpdate(
+          { lineageId: slot.lineageId, originalDateKey: dateKey },
+          {
+            lineageId: slot.lineageId,
+            originalDateKey: dateKey,
+            originalSlotId: slot._id,
+            status: 'CANCELLED',
+            source: 'HOLIDAY',
+            reason: label,
+            requestedBy: req.user?._id,
+          },
+          { upsert: true, new: true, session }
+        );
+
+        // Cancel AttendanceSession if exists
+        const sessionDoc = await AttendanceSession.findOne({
+          lineageId: slot.lineageId,
+          originalDateKey: dateKey,
+        }).session(session || null);
+
+        if (sessionDoc && sessionDoc.status !== 'CANCELLED') {
+          sessionDoc.statusBeforeCancel = sessionDoc.status as any;
+          sessionDoc.status = 'CANCELLED';
+          await sessionDoc.save({ session });
+        }
+
+        // Send notifications
+        const course = slot.courseId as any;
+        const courseCode = course?.code || 'Class';
+        const courseTitle = course?.title || 'Class';
+
+        const students = await User.find({
+          batchId: slot.batchId,
+          role: 'STUDENT',
+          isActive: true,
+        });
+
+        const recipientIds = [
+          ...students.map((st) => st._id),
+          ...(slot.professorIds || []).map((p: any) => p._id || p),
+        ];
+
+        await NotificationService.notify(session, recipientIds, {
+          type: 'CLASS_CANCELLED',
+          title: `Holiday Declared: ${label}`,
+          body: `${courseTitle} (${courseCode}) on ${dateKey} is cancelled due to holiday: ${label}.`,
+          link: '/schedule',
+          dedupeKeyPrefix: `holiday:${slot.lineageId}:${dateKey}`,
+        });
+      }
+    }
+
+    term.holidays.push({ dateKey, label });
+    await term.save({ session });
+  });
 
   sendSuccess(res, term, 'Holiday added successfully', 201);
 });

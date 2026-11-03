@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../context/AuthContext';
 import { apiClient } from '../../api/client';
 import { getWeekSchedule } from '../../api/schedule';
@@ -16,6 +16,7 @@ interface FacultyMember {
 
 export const ProfessorSchedule: React.FC = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [currentWeekOf, setCurrentWeekOf] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [selectedProfessorId, setSelectedProfessorId] = useState<string>(user?._id || user?.id || '');
 
@@ -120,6 +121,8 @@ export const ProfessorSchedule: React.FC = () => {
         role="PROFESSOR"
         showSection={true}
         showFaculty={!isViewingOwnSchedule}
+        onScheduleChange={() => queryClient.invalidateQueries({ queryKey: ['schedule'] })}
+        currentUserId={user?._id || user?.id}
       />
     </div>
   );

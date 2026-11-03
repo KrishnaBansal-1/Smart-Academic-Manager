@@ -20,6 +20,9 @@ const AcademicSetup = lazy(() =>
 const TimetableManager = lazy(() =>
   import('./pages/admin/TimetableManager').then((m) => ({ default: m.TimetableManager }))
 );
+const AdminSchedule = lazy(() =>
+  import('./pages/admin/AdminSchedule').then((m) => ({ default: m.AdminSchedule }))
+);
 const ProfessorDashboard = lazy(() =>
   import('./pages/professor/ProfessorDashboard').then((m) => ({ default: m.ProfessorDashboard }))
 );
@@ -96,9 +99,10 @@ export const App: React.FC = () => {
                     {/* Role Protected: ADMIN */}
                     <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
                       <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="/admin/schedule" element={<AdminSchedule />} />
+                      <Route path="/admin/timetable" element={<TimetableManager />} />
                       <Route path="/admin/manage" element={<AdminManagement />} />
                       <Route path="/admin/academics" element={<AcademicSetup />} />
-                      <Route path="/admin/timetable" element={<TimetableManager />} />
                     </Route>
 
                     {/* Role Protected: PROFESSOR */}

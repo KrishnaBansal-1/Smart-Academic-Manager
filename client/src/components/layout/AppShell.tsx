@@ -51,6 +51,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       case 'ADMIN':
         return [
           { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+          { to: '/admin/schedule', label: 'Schedule Viewer', icon: Calendar },
           { to: '/admin/timetable', label: 'Timetable Editor', icon: TableProperties },
           { to: '/admin/manage', label: 'Academic Records', icon: Database },
           { to: '/admin/academics', label: 'Academic Setup', icon: Calendar },

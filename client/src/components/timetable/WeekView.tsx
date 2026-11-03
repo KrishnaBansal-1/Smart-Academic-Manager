@@ -8,10 +8,18 @@ import {
   User as UserIcon,
   AlertTriangle,
   CalendarOff,
+  RotateCcw,
+  CalendarClock,
+  Ban,
 } from 'lucide-react';
 import { format, parseISO, addWeeks, subWeeks } from 'date-fns';
 import { ScheduleResponse, ScheduleEntry } from '../../types/schedule';
 import { DAY_NAMES, SHORT_DAY_NAMES } from './TimetableGridShell';
+import { CancelClassModal } from './CancelClassModal';
+import { RescheduleModal } from './RescheduleModal';
+import { revertOccurrence } from '../../api/occurrence';
+import { showToast } from '../../store/toastStore';
+import { getErrorMessage } from '../../lib/errors';
 
 export interface WeekViewProps {
   scheduleData: ScheduleResponse | undefined;
@@ -23,6 +31,8 @@ export interface WeekViewProps {
   showSection?: boolean; // If true, shows section name (helpful for professors/admins)
   showFaculty?: boolean; // If true, shows faculty name (helpful for students/admins)
   headerAction?: React.ReactNode;
+  onScheduleChange?: () => void;
+  currentUserId?: string;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -31,11 +41,42 @@ export const WeekView: React.FC<WeekViewProps> = ({
   error,
   currentWeekOf,
   onWeekChange,
+  role,
   showSection = true,
   showFaculty = true,
   headerAction,
+  onScheduleChange,
+  currentUserId,
 }) => {
   const [selectedMobileDay, setSelectedMobileDay] = useState<number>(1);
+  const [cancelModalEntry, setCancelModalEntry] = useState<ScheduleEntry | null>(null);
+  const [rescheduleModalEntry, setRescheduleModalEntry] = useState<ScheduleEntry | null>(null);
+  const [revertingOccurrenceId, setRevertingOccurrenceId] = useState<string | null>(null);
+
+  const canManageEntry = (entry: ScheduleEntry): boolean => {
+    if (entry.state === 'EXAM') return false;
+    if (role === 'ADMIN') return true;
+    if (role === 'PROFESSOR') {
+      if (!currentUserId) return true; // Viewing own schedule by default
+      const userIdStr = currentUserId.toString();
+      return (entry.professors || []).some((p) => p._id?.toString() === userIdStr);
+    }
+    return false;
+  };
+
+  const handleRevert = async (entry: ScheduleEntry) => {
+    try {
+      setRevertingOccurrenceId(entry.occurrenceId);
+      await revertOccurrence(entry.lineageId, entry.originalDateKey);
+      showToast('Class occurrence restored to original schedule', 'success');
+      onScheduleChange?.();
+    } catch (err: unknown) {
+      const msg = getErrorMessage(err);
+      showToast(msg, 'error');
+    } finally {
+      setRevertingOccurrenceId(null);
+    }
+  };
 
   const handlePrevWeek = () => {
     const d = parseISO(currentWeekOf);
@@ -414,6 +455,68 @@ export const WeekView: React.FC<WeekViewProps> = ({
                                       </span>
                                     )}
                                   </div>
+
+                                  {canManageEntry(entry) && (
+                                    <div className="mt-2 flex items-center justify-end gap-1.5 border-t border-slate-100 pt-1.5 text-[10px]">
+                                      {entry.state === 'NORMAL' && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => setRescheduleModalEntry(entry)}
+                                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-semibold text-sky-700 hover:bg-sky-50 transition"
+                                            title="Reschedule class"
+                                          >
+                                            <CalendarClock className="h-3 w-3" />
+                                            <span>Reschedule</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setCancelModalEntry(entry)}
+                                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-semibold text-red-600 hover:bg-red-50 transition"
+                                            title="Cancel class"
+                                          >
+                                            <Ban className="h-3 w-3" />
+                                            <span>Cancel</span>
+                                          </button>
+                                        </>
+                                      )}
+                                      {entry.state === 'CANCELLED' && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRevert(entry)}
+                                          disabled={revertingOccurrenceId === entry.occurrenceId}
+                                          className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-semibold text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-50"
+                                          title="Restore class to original schedule"
+                                        >
+                                          <RotateCcw className="h-3 w-3" />
+                                          <span>Restore</span>
+                                        </button>
+                                      )}
+                                      {(entry.state === 'MOVED_OUT' || entry.state === 'MOVED_IN') && (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleRevert(entry)}
+                                            disabled={revertingOccurrenceId === entry.occurrenceId}
+                                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-semibold text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-50"
+                                            title="Revert back to original schedule"
+                                          >
+                                            <RotateCcw className="h-3 w-3" />
+                                            <span>Revert</span>
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setRescheduleModalEntry(entry)}
+                                            className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 font-semibold text-sky-700 hover:bg-sky-50 transition"
+                                            title="Change reschedule time"
+                                          >
+                                            <CalendarClock className="h-3 w-3" />
+                                            <span>Change</span>
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -582,6 +685,63 @@ export const WeekView: React.FC<WeekViewProps> = ({
                           </span>
                         </div>
                       )}
+
+                      {canManageEntry(entry) && (
+                        <div className="col-span-2 mt-2 flex items-center justify-end gap-2 border-t border-slate-100 pt-2 text-xs">
+                          {entry.state === 'NORMAL' && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => setRescheduleModalEntry(entry)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 font-semibold text-sky-700 hover:bg-sky-100 transition"
+                              >
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                <span>Reschedule</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setCancelModalEntry(entry)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 font-semibold text-red-600 hover:bg-red-100 transition"
+                              >
+                                <Ban className="h-3.5 w-3.5" />
+                                <span>Cancel</span>
+                              </button>
+                            </>
+                          )}
+                          {entry.state === 'CANCELLED' && (
+                            <button
+                              type="button"
+                              onClick={() => handleRevert(entry)}
+                              disabled={revertingOccurrenceId === entry.occurrenceId}
+                              className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                            >
+                              <RotateCcw className="h-3.5 w-3.5" />
+                              <span>Restore</span>
+                            </button>
+                          )}
+                          {(entry.state === 'MOVED_OUT' || entry.state === 'MOVED_IN') && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleRevert(entry)}
+                                disabled={revertingOccurrenceId === entry.occurrenceId}
+                                className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
+                              >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                                <span>Revert</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRescheduleModalEntry(entry)}
+                                className="inline-flex items-center gap-1 rounded-lg border border-sky-200 bg-sky-50 px-2.5 py-1 font-semibold text-sky-700 hover:bg-sky-100 transition"
+                              >
+                                <CalendarClock className="h-3.5 w-3.5" />
+                                <span>Change</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))
@@ -590,6 +750,22 @@ export const WeekView: React.FC<WeekViewProps> = ({
           );
         })()}
       </div>
+
+      {/* Cancel Modal */}
+      <CancelClassModal
+        isOpen={Boolean(cancelModalEntry)}
+        onClose={() => setCancelModalEntry(null)}
+        entry={cancelModalEntry}
+        onSuccess={() => onScheduleChange?.()}
+      />
+
+      {/* Reschedule Modal */}
+      <RescheduleModal
+        isOpen={Boolean(rescheduleModalEntry)}
+        onClose={() => setRescheduleModalEntry(null)}
+        entry={rescheduleModalEntry}
+        onSuccess={() => onScheduleChange?.()}
+      />
     </div>
   );
 };
