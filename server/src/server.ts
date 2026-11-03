@@ -5,6 +5,7 @@ import { connectDB } from './config/db';
 import { ENV } from './config/env';
 import { GenerationJob } from './models/GenerationJob';
 import { ScheduleSlot } from './models/ScheduleSlot';
+import { initSocketServer } from './services/socket.service';
 
 const startServer = async () => {
   try {
@@ -30,6 +31,7 @@ const startServer = async () => {
 
     const app = createApp();
     const server = http.createServer(app);
+    initSocketServer(server);
 
     server.listen(ENV.PORT, () => {
       console.log(`🚀 Smart Academic Manager API is running on port ${ENV.PORT} [${ENV.NODE_ENV}]`);

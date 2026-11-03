@@ -15,6 +15,7 @@ import constraintRoutes from './routes/constraint.routes';
 import timetableRoutes from './routes/timetable.routes';
 import generationJobRoutes from './routes/generationJob.routes';
 import scheduleRoutes from './routes/schedule.routes';
+import notificationRoutes from './routes/notification.routes';
 
 export const createApp = (): Application => {
   const app: Application = express();
@@ -71,6 +72,7 @@ export const createApp = (): Application => {
   app.use('/api/v1/timetables', timetableRoutes);
   app.use('/api/v1/generation-jobs', generationJobRoutes);
   app.use('/api/v1/schedule', scheduleRoutes);
+  app.use('/api/v1/notifications', notificationRoutes);
 
   // Fallback 404 handler
   app.use((_req: Request, res: Response) => {

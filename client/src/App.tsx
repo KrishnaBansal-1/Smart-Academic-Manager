@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
@@ -33,6 +34,9 @@ const StudentDashboard = lazy(() =>
 );
 const StudentTimetable = lazy(() =>
   import('./pages/student/StudentTimetable').then((m) => ({ default: m.StudentTimetable }))
+);
+const NotificationsPage = lazy(() =>
+  import('./pages/shared/Notifications').then((m) => ({ default: m.NotificationsPage }))
 );
 
 const queryClient = new QueryClient({
@@ -73,41 +77,50 @@ export const App: React.FC = () => {
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          <BrowserRouter>
-            <AppShell>
-              <Suspense fallback={<PageLoader />}>
-                <Routes>
-                  {/* Public Routes */}
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/" element={<RootRedirect />} />
+          <SocketProvider>
+            <BrowserRouter>
+              <AppShell>
+                <Suspense fallback={<PageLoader />}>
+                  <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/" element={<RootRedirect />} />
 
-                  {/* Role Protected: ADMIN */}
-                  <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-                    <Route path="/admin" element={<AdminDashboard />} />
-                    <Route path="/admin/manage" element={<AdminManagement />} />
-                    <Route path="/admin/academics" element={<AcademicSetup />} />
-                    <Route path="/admin/timetable" element={<TimetableManager />} />
-                  </Route>
+                    {/* Authenticated Shared Routes */}
+                    <Route
+                      element={<ProtectedRoute allowedRoles={['ADMIN', 'PROFESSOR', 'STUDENT']} />}
+                    >
+                      <Route path="/notifications" element={<NotificationsPage />} />
+                    </Route>
 
-                  {/* Role Protected: PROFESSOR */}
-                  <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
-                    <Route path="/professor" element={<ProfessorDashboard />} />
-                    <Route path="/professor/preferences" element={<ProfessorPreferences />} />
-                    <Route path="/professor/schedule" element={<ProfessorSchedule />} />
-                  </Route>
+                    {/* Role Protected: ADMIN */}
+                    <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                      <Route path="/admin" element={<AdminDashboard />} />
+                      <Route path="/admin/manage" element={<AdminManagement />} />
+                      <Route path="/admin/academics" element={<AcademicSetup />} />
+                      <Route path="/admin/timetable" element={<TimetableManager />} />
+                    </Route>
 
-                  {/* Role Protected: STUDENT */}
-                  <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
-                    <Route path="/student" element={<StudentDashboard />} />
-                    <Route path="/student/timetable" element={<StudentTimetable />} />
-                  </Route>
+                    {/* Role Protected: PROFESSOR */}
+                    <Route element={<ProtectedRoute allowedRoles={['PROFESSOR']} />}>
+                      <Route path="/professor" element={<ProfessorDashboard />} />
+                      <Route path="/professor/preferences" element={<ProfessorPreferences />} />
+                      <Route path="/professor/schedule" element={<ProfessorSchedule />} />
+                    </Route>
 
-                  {/* Catch-all */}
-                  <Route path="*" element={<Navigate to="/" replace />} />
-                </Routes>
-              </Suspense>
-            </AppShell>
-          </BrowserRouter>
+                    {/* Role Protected: STUDENT */}
+                    <Route element={<ProtectedRoute allowedRoles={['STUDENT']} />}>
+                      <Route path="/student" element={<StudentDashboard />} />
+                      <Route path="/student/timetable" element={<StudentTimetable />} />
+                    </Route>
+
+                    {/* Catch-all */}
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                  </Routes>
+                </Suspense>
+              </AppShell>
+            </BrowserRouter>
+          </SocketProvider>
         </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>

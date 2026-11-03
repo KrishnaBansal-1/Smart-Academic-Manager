@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Badge } from '../ui/Badge';
 import { ToastContainer } from '../ui/Toast';
+import { NotificationBell } from '../notifications/NotificationBell';
 import {
   Calendar,
   LogOut,
@@ -116,6 +117,8 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           {/* User profile & actions */}
           {user && (
             <div className="flex items-center space-x-3">
+              <NotificationBell />
+
               <div className="hidden sm:flex items-center space-x-3 text-right">
                 <div>
                   <p className="text-sm font-semibold text-slate-800 leading-tight">

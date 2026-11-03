@@ -16,7 +16,8 @@ import { Timetable } from '../models/Timetable';
 import { ScheduleSlot, IScheduleSlot } from '../models/ScheduleSlot';
 import { AcademicTerm } from '../models/AcademicTerm';
 import { User } from '../models/User';
-import { Notification } from '../models/Notification';
+import { NotificationService } from '../services/notification.service';
+import { emitToAll } from '../services/socket.service';
 import { today } from '../utils/dateKey';
 import { SolverSlot } from '../services/scheduler/types';
 
@@ -107,9 +108,10 @@ export const generateTimetable = asyncHandler(async (req: Request, res: Response
 
   (async () => {
     try {
-      const output = await runSolverJob(input, async (progress, _message) => {
+      const output = await runSolverJob(input, async (progress, message) => {
         try {
           await GenerationJob.findByIdAndUpdate(job._id, { progress });
+          emitToAll('generation:update', { jobId: job._id.toString(), progress, message, status: 'RUNNING' });
         } catch {
           // ignore transient progress update errors
         }
@@ -122,6 +124,13 @@ export const generateTimetable = asyncHandler(async (req: Request, res: Response
           progress: 100,
           metrics: output.metrics,
           unplaced: output.unplaced,
+        });
+        emitToAll('generation:update', {
+          jobId: job._id.toString(),
+          status: 'FAILED',
+          progress: 100,
+          error: output.error,
+          metrics: output.metrics,
         });
         return;
       }
@@ -172,6 +181,14 @@ export const generateTimetable = asyncHandler(async (req: Request, res: Response
           kind: u.kind,
           reason: u.reason,
         })),
+      });
+
+      emitToAll('generation:update', {
+        jobId: job._id.toString(),
+        status: 'DONE',
+        progress: 100,
+        timetableId: timetable._id.toString(),
+        metrics: output.metrics,
       });
     } catch (workerErr: unknown) {
       const errMessage = workerErr instanceof Error ? workerErr.message : String(workerErr);
@@ -1007,14 +1024,7 @@ export const publishTimetable = asyncHandler(async (req: Request, res: Response)
     ];
 
     if (notificationsToInsert.length > 0) {
-      try {
-        await Notification.insertMany(notificationsToInsert, {
-          session,
-          ordered: false,
-        });
-      } catch {
-        // Ignore deduplication conflicts
-      }
+      await NotificationService.notifyMany(session, notificationsToInsert);
     }
   });
 
